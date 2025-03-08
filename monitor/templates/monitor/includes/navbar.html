@@ -1,0 +1,18 @@
+<nav class="bg-blue-600 p-4 text-white">
+    <div class="container mx-auto flex justify-between items-center">
+        <a href="{% url 'home' %}" class="text-xl font-bold">Сетевое приложение</a>
+        <ul class="flex space-x-4">
+            <li><a href="{% url 'calculators' %}" class="hover:underline">Калькуляторы</a></li>
+            <li><a href="{% url 'useful' %}" class="hover:underline">Полезности</a></li>
+            <li><a href="{% url 'notes' %}" class="hover:underline">Заметки</a></li>
+        </ul>
+        <div>
+            {% if user.is_authenticated %}
+                <span class="mr-4">Привет, {{ user.username }}</span>
+                <a href="{% url 'logout' %}" class="bg-red-500 px-4 py-2 rounded">Выйти</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="bg-green-500 px-4 py-2 rounded">Войти</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>

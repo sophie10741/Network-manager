@@ -1,0 +1,31 @@
+{% extends "monitor/base.html" %}
+
+{% block content %}
+<h2>Сканирование сети</h2>
+
+<!-- Поле для ввода IP-адреса -->
+<form method="POST" action="{% url 'scan_network' %}">
+    {% csrf_token %}
+    <label for="start_ip">Введите IP-адрес для сканирования:</label>
+    <input type="text" id="start_ip" name="start_ip" required>
+    <button type="submit">Запустить сканирование</button>
+</form>
+
+<!-- Поле для вывода статуса -->
+<div id="scan-status"></div>
+
+<script>
+document.getElementById("scan-form").onsubmit = function(event) {
+    event.preventDefault();
+    let ip = document.getElementById("manual-ip").value;
+    
+    fetch(/monitor/scan/?manual_ip=${ip})
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("scan-status").innerText = data.message;
+        })
+        .catch(error => console.error("Ошибка:", error));
+};
+</script>
+
+{% endblock %}

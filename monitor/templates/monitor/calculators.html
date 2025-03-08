@@ -1,0 +1,25 @@
+{% extends "monitor/base.html" %}
+
+{% block title %}Калькуляторы{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Калькуляторы</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <a href="{% url 'subnet_calculator' %}" class="block p-4 bg-white shadow-md rounded-lg hover:bg-gray-100">
+        <h2 class="text-xl font-semibold">Калькулятор подсетей</h2>
+        <p class="text-sm text-gray-600">Рассчитывает маску сети, количество хостов и диапазон IP.</p>
+    </a>
+
+    <a href="{% url 'server_calculator' %}" class="block p-4 bg-white shadow-md rounded-lg hover:bg-gray-100">
+        <h2 class="text-xl font-semibold">Калькулятор серверов</h2>
+        <p class="text-sm text-gray-600">Определяет необходимое количество серверов под нагрузку.</p>
+    </a>
+
+    <a href="{% url 'storage_calculator' %}" class="block p-4 bg-white shadow-md rounded-lg hover:bg-gray-100">
+        <h2 class="text-xl font-semibold">Калькулятор памяти и дисков</h2>
+        <p class="text-sm text-gray-600">Помогает вычислить требуемый объем памяти и дисков.</p>
+    </a>
+</div>
+
+{% endblock %}

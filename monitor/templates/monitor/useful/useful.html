@@ -1,0 +1,30 @@
+{% extends "monitor/base.html" %}
+
+{% block title %}Полезности{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Полезности</h1>
+
+<div class="mb-4">
+    <h2 class="text-xl font-semibold">Категории:</h2>
+    <ul>
+        {% for category in categories %}
+            <li><a href="#">{{ category.name }}</a></li>
+        {% endfor %}
+    </ul>
+</div>
+
+<div class="mb-4">
+    <h2 class="text-xl font-semibold">Все полезности:</h2>
+    <div>
+        {% for utility in utilities %}
+            <div class="border-b py-2">
+                <h3 class="font-bold">{{ utility.title }}</h3>
+                <p>{{ utility.description }}</p>
+                <a href="{% url 'useful_detail' utility.id %}" class="text-blue-500">Читать далее</a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
