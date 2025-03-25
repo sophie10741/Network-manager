@@ -9,7 +9,7 @@ class NetworkInterfaceInline(admin.TabularInline):
     readonly_fields = ("interface_name", "ip_address", "mac_address")
 
 class NetworkDeviceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'device_type', 'status', 'is_online_display', 'get_snmp_info_display')
+    list_display = ('name', 'device_type', 'status')
     search_fields = ("name", "device_type")
     inlines = [NetworkInterfaceInline]
 

@@ -1,5 +1,282 @@
-{% extends 'base.html' %}
-{% block title %}Главная{% endblock %}
+{% extends "monitor/base.html" %}
+{% block title %}Network Manager{% endblock %}
+
 {% block content %}
-<h1 class="text-2xl font-bold">Добро пожаловать в приложение!</h1>
+<style>
+    #context-menu {
+        display: none;
+        position: absolute;
+        background: white;
+        border: 1px solid #ccc;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        padding: 5px;
+        border-radius: 5px;
+        min-width: 150px;
+    }
+
+    #context-menu ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    #context-menu li {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+        background: white;
+    }
+
+    #context-menu li:last-child {
+        border-bottom: none;
+    }
+
+    #context-menu li:hover {
+        background: #007bff;
+        color: white;
+    }
+
+    #scan-status {
+        font-size: 18px;
+        margin: 20px 0;
+        color: #007bff;
+        animation: fadeInOut 1s infinite;
+    }
+
+    @keyframes fadeInOut {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    #topology-container {
+        width: 100%;
+        height: 400px;
+        border: 1px solid #ccc;
+        margin-bottom: 20px;
+    }
+</style>
+{% if not devices %}
+<div class="text-center my-5">
+    <h3>Привет, админ!</h3>
+    <p>Похоже, сеть ещё не отсканирована. Начнём?</p>
+    <form id="scan-form" method="POST" action="{% url 'start_scan' %}">
+        {% csrf_token %}
+        <label for="start_ip">Введите IP-адрес для сканирования:</label>
+        <input type="text" id="start_ip" name="start_ip" required>
+        <label for="server_type">Ключевые слова для сервера:</label>
+        <input type="text" id="server_type" name="server_type" required>
+        <label for="router_type">Ключевые слова для маршрутизатора:</label>
+        <input type="text" id="router_type" name="router_type" required>
+        <label for="switch_type">Ключевые слова для коммутатора:</label>
+        <input type="text" id="switch_type" name="switch_type" required>
+        <label for="client_type">Ключевые слова для клиента:</label>
+        <input type="text" id="client_type" name="client_type" required>
+        <button type="submit" class="btn btn-primary mt-3">Отсканировать</button>
+        <div id="scan-messages" class="mt-3"></div>
+    </form>
+</div>
+
+{% else %}
+<h3>Графическая топология</h3>
+<div id="cy" style="height: 400px; border: 1px solid #ddd; margin-bottom: 20px;"></div>
+<div id="context-menu" class="context-menu">
+    <ul id="context-menu-list"></ul>
+</div>
+<button id="refreshTopology">🔄 Обновить топологию</button>
+<div id="legend">
+    <span style="color: blue;">■</span> Сервер
+    <span style="color: red;">■</span> Маршрутизатор
+    <span style="color: green;">■</span> Коммутатор
+    <span style="color: orange;">■</span> Клиент
+    <span style="color: gray;">■</span> Неизвестный
+</div>
+<h3>Таблица устройств</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Имя</th>
+            <th>Тип</th>
+            <th>IP-адреса</th>
+            <th>Статус</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for device in devices %}
+        <tr>
+            <td>{{ device.name }}</td>
+            <td>{{ device.device_type }}</td>
+            <td>
+                {% for interface in device.networkinterface_set.all %}
+                {{ interface.ip_address }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                No IP Assigned
+                {% endfor %}
+            </td>
+            <td>
+                {% if device.is_online %}
+                🟢 Online
+                {% else %}
+                🔴 Offline
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4" class="text-center">Нет устройств</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.1/cytoscape.min.js"></script>
+
+<script>
+    {% if topology_data %}
+        const topologyData = {{ topology_data|safe }};
+        console.log("Данные для топологии:", {{ topology_data|safe }});
+        let cy = cytoscape({
+            container: document.getElementById('cy'),
+            elements: topologyData,
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'label': 'data(label)',
+                        'color': 'white',
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'background-color': 'data(color)',
+                        'width': '50px',
+                        'height': '50px'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': '#ccc',
+                        'target-arrow-color': '#ccc',
+                        'target-arrow-shape': 'triangle'
+                    }
+                }
+            ],
+            layout: {
+                name: 'cose',
+                animate: true
+            }
+        });
+
+        console.log("Граф создан:", cy);
+
+        const deviceSettings = {
+                router: [
+                    { name: "Change IP Address", template: "change_ip" },
+                    { name: "Create GRE Tunnel", template: "create_gre_tunnel" },
+                    { name: "Set Default Route", template: "default_route" },
+                ],
+                server: [
+                    { name: "Change IP Address", template: "change_ip" },
+                    { name: "Configure DHCP", template: "configure_dhcp" },
+                    { name: "Configure DNS", template: "configure_dns" },
+                    { name: "Set Timezone", template: "set_timezone" },
+                    { name: "Configure Chrony", template: "configure_chrony" },
+                    { name: "Configure Ansible", template: "configure_ansible" },
+                ],
+                switch: [
+                    { name: "Change IP Address", template: "change_ip" },
+                ],
+                client: [
+                    { name: "Change IP Address", template: "change_ip" },
+                ],
+                unknown: [
+                    { name: "Change IP Address", template: "change_ip" },
+                ]
+        };
+
+        const contextMenu = document.getElementById('context-menu');
+        const contextMenuList = document.getElementById('context-menu-list');
+
+        // 📌 Обработчик клика по узлу (открытие меню)
+        cy.on('tap', 'node', (event) => {
+            const node = event.target;
+            const deviceId = node.data('id');
+            const deviceType = node.data('device_type') || 'unknown';
+
+            console.log(`Клик по устройству: ${node.data('label')} (ID: ${deviceId}, Type: ${deviceType})`);
+
+            // Очищаем старые настройки
+            contextMenuList.innerHTML = '';
+            const settings = deviceSettings[deviceType] || [];
+
+            settings.forEach(setting => {
+                const li = document.createElement('li');
+                li.textContent = setting.name;
+                li.onclick = () => {
+                    window.location.href = `/devices/${deviceId}/template/?template=${setting.template}`;
+                };
+                contextMenuList.appendChild(li);
+            });
+            contextMenu.style.top = `${event.renderedPosition.y + 10}px`;
+            contextMenu.style.left = `${event.renderedPosition.x + 10}px`;
+            contextMenu.style.setProperty('display', 'block', 'important');
+            // Принудительное обновление стиля
+            setTimeout(() => {
+                contextMenu.style.display = 'block';
+                console.log("После таймаута display:", window.getComputedStyle(contextMenu).display);
+            }, 10);
+
+
+            // Проверяем, поменялся ли display
+            console.log("Свойство display у contextMenu:", window.getComputedStyle(contextMenu).display);
+        });
+
+        // Закрыть меню при клике вне его области
+        document.addEventListener('click', (event) => {
+            if (!contextMenu.contains(event.target)) {
+                contextMenu.style.display = 'none';
+            }
+        });
+        // 📌 Кнопка обновления топологии
+        document.getElementById("refreshTopology").addEventListener("click", function () {
+            fetch("{% url 'network_topology_data' %}")
+                .then(response => response.json())
+                .then(updatedData => {
+                    cy.elements().remove();
+                    cy.add(updatedData.nodes);
+                    cy.add(updatedData.edges);
+                    cy.layout({ name: 'cose' }).run();
+            })
+            .catch(error => console.error("Ошибка загрузки топологии:", error));
+        });
+    {% endif %}
+
+
+    document.getElementById('scan-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        // Проверка наличия блока scanMessages
+        let scanMessages = document.getElementById('scan-messages');
+        if (!scanMessages) {
+            console.warn("Блок scan-messages не найден!");
+            scanMessages = document.createElement('div');
+            scanMessages.id = 'scan-messages';
+            e.target.appendChild(scanMessages);  // Добавляем в конец формы
+        }
+        const messages = [
+        "Ищем устройства... 🕵️",
+        "Ловим пакеты... 📡",
+        "Проверяем маршрутизаторы... 🔍",
+        "Находим потерянные пакеты... 📦",
+        "Кабель воткнут? 🪛"
+    ];
+        scanMessages.innerHTML = '<p>' + messages[Math.floor(Math.random() * messages.length)] + '</p>';
+        e.target.submit();
+    });
+</script>
+
 {% endblock %}
+

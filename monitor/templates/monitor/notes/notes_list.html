@@ -1,0 +1,32 @@
+{% extends "monitor/base.html" %}
+
+{% block title %}Заметки{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Заметки</h1>
+<a href="{% url 'add_note' %}" class="bg-green-500 text-white px-4 py-2 rounded">Добавить заметку</a>
+
+{% for note in notes %}
+    <div class="bg-white p-4 rounded shadow my-4">
+        <h2 class="text-xl font-bold"><a href="{% url 'note_detail' note.pk %}">{{ note.title }}</a></h2>
+        <p>{{ note.content|truncatewords:20 }}</p>
+        <small>Автор: {{ note.author }} | {{ note.created_at }}</small>
+    </div>
+{% endfor %}
+
+<div class="pagination">
+    <span class="step-links">
+        {% if notes.has_previous %}
+            <a href="?page=1" class="text-blue-500">&laquo; Первая</a>
+            <a href="?page={{ notes.previous_page_number }}" class="text-blue-500">Предыдущая</a>
+        {% endif %}
+
+        <span class="current">Страница {{ notes.number }} из {{ notes.paginator.num_pages }}</span>
+
+        {% if notes.has_next %}
+            <a href="?page={{ notes.next_page_number }}" class="text-blue-500">Следующая</a>
+            <a href="?page={{ notes.paginator.num_pages }}" class="text-blue-500">Последняя &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+{% endblock %}

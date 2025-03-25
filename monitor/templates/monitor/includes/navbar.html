@@ -4,7 +4,7 @@
         <ul class="flex space-x-4">
             <li><a href="{% url 'calculators' %}" class="hover:underline">Калькуляторы</a></li>
             <li><a href="{% url 'useful' %}" class="hover:underline">Полезности</a></li>
-            <li><a href="{% url 'notes' %}" class="hover:underline">Заметки</a></li>
+            <li><a href="{% url 'notes_list' %}" class="hover:underline">Заметки</a></li>
         </ul>
         <div>
             {% if user.is_authenticated %}

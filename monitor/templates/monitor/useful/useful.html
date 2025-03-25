@@ -8,23 +8,51 @@
 <div class="mb-4">
     <h2 class="text-xl font-semibold">Категории:</h2>
     <ul>
+        <li>
+            <a href="{% url 'useful' %}" class="{% if not selected_category %}font-bold text-blue-500{% endif %}">
+                Все
+            </a>
+        </li>
         {% for category in categories %}
-            <li><a href="#">{{ category.name }}</a></li>
+            <li>
+                <a href="{% url 'useful' %}?category={{ category.id }}"
+                   class="{% if selected_category == category.id %}font-bold text-blue-500{% endif %}">
+                    {{ category.name }}
+                </a>
+            </li>
         {% endfor %}
     </ul>
 </div>
 
 <div class="mb-4">
-    <h2 class="text-xl font-semibold">Все полезности:</h2>
-    <div>
-        {% for utility in utilities %}
-            <div class="border-b py-2">
-                <h3 class="font-bold">{{ utility.title }}</h3>
-                <p>{{ utility.description }}</p>
-                <a href="{% url 'useful_detail' utility.id %}" class="text-blue-500">Читать далее</a>
-            </div>
-        {% endfor %}
-    </div>
+    <h2 class="text-xl font-semibold">Полезности:</h2>
+    {% if utilities %}
+        <div>
+            {% for utility in utilities %}
+                <div class="border-b py-2">
+                    <h3 class="font-bold">{{ utility.title }}</h3>
+                    <p>{{ utility.description }}</p>
+                    <a href="{% url 'useful_detail' utility.id %}" class="text-blue-500">Читать далее</a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-gray-500">Нет полезностей в этой категории.</p>
+    {% endif %}
 </div>
+<div class="pagination">
+    <span class="step-links">
+        {% if utilities.has_previous %}
+            <a href="?page=1" class="text-blue-500">&laquo; Первая</a>
+            <a href="?page={{ utilities.previous_page_number }}" class="text-blue-500">Предыдущая</a>
+        {% endif %}
 
+        <span class="current">Страница {{ utilities.number }} из {{ utilities.paginator.num_pages }}</span>
+
+        {% if utilities.has_next %}
+            <a href="?page={{ utilities.next_page_number }}" class="text-blue-500">Следующая</a>
+            <a href="?page={{ utilities.paginator.num_pages }}" class="text-blue-500">Последняя &raquo;</a>
+        {% endif %}
+    </span>
+</div>
 {% endblock %}
